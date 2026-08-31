@@ -1,10 +1,12 @@
 from django.contrib.gis.db import models
+from api.models import Patient
 
 class Responsible(models.Models):
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_lenght=50)
+    pacient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="responsibles")
+    complete_name = models.CharField(max_length=200, null=False, blank=False)
     cpf = models.CharField(max_length=15)
-    birth_date = models.DateField()
-    email = models.EmailField()
-    cellphone = models.CharField(max_length=20)
-    address = models.TextField(max_length=50)
+    rg = models.CharField(max_length=15)
+    birth_date = models.DateField(null=False, blank=False)
+    email = models.EmailField(null=False, blank=False)
+    main_cellphone = models.CharField(max_length=15, null=False, blank=False)
+    secondary_cellphone = models.CharField(max_length=15, null=True, blank=True)

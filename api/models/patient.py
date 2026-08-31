@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from api.models import Caregiver, Responsable
+from api.models import Caregiver, Responsable, Routine
 
 
 class BloodType(models.IntegerChoices):
@@ -13,34 +13,35 @@ class BloodType(models.IntegerChoices):
     8 = "O-"
 
 class Genre(models.IntegerChoices):
-    1 = "M"
-    2 = "F"
+    1 = "Masculino"
+    2 = "Feminino"
 
 class Patient(models.Models):
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    complete_name = models.CharField(max_length=250)
     birth_date = models.DateField()
-    cpf = models.CharField(max_length=15)
-    rg = models.CharField(max_length=15)
-    genre = models.IntegerChoices(Genre.choices)
-    religion = models.CharField(max_length=30)
-    blood_type = models.IntegerChoices(BloodType.choices)
-
-    emergency_contact = models.CharField(max_length=50)
-    nationality = models.CharField(max_length=50)
-    hip = models.CharField(max_length=200) # health insurance plan
-    routine = models.TextField()
-    temperament = models.CharField(max_length=100)
-    hobby = models.CharField(max_length=100)
-    allergies = models.TextField(blank=True, null=True)
-    restrictions = models.TextField(blank=True, null=True)
+    main_diagnosis = models.TextField(null=False, blank=False, max_length=300)
+    religion = models.CharField(max_length=50)
+    cpf = models.CharField(max_length=15, null=False, blank=False)
+    rg = models.CharField(max_length=15, null=False, blank=False)
+    genre = models.IntegerChoices(Genre.choices, null=False, blank=False)
     continuous_use_medicines = models.TextField()
-    illnesses = models.TextField(blank=True, null=True)
-    id_register = models.CharField(max_length=9)
-    medical_history = models.TextField(blank=True, null=True)
-    vital_signs = models.TextField(blank=True, null=True)
+    blood_type = models.IntegerChoices(BloodType.choices)
+    routine = models.ForeignKey(Routine, on_delete=models.CASCADE, related_name="patient")
+    hip = models.ForeignKey() # health insurance plan
+    temperament = models.CharField(max_length=100)
+    hobbies = models.TextField(max_length=500)
+    secondary_health_problems = models.TextField(max_length=400)
+    responsible = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name="responsible")
+    hospitalization_data = models
+    # emergency_contact = models.CharField(max_length=50)
+    # nationality = models.CharField(max_length=50)
+    # allergies = models.TextField(blank=True, null=True)
+    # restrictions = models.TextField(blank=True, null=True)
+    # illnesses = models.TextField(blank=True, null=True)
+    # id_register = models.CharField(max_length=9)
+    # medical_history = models.TextField(blank=True, null=True)
+    # vital_signs = models.TextField(blank=True, null=True)
 
-    caregiver = models.OneToOneField(Caregiver, on_delete=models.CASCADE, related_name="patient")
-    responsible = models.OneToOneField(Responsable, on_delete=models.CASCADE, related_name="responsible")
-    room_number = models.IntegerField()
-    last_pressure = models.CharField(max_length=20)
+    # caregiver = models.OneToOneField(Caregiver, on_delete=models.CASCADE, related_name="patient")
+    # room_number = models.IntegerField()
+    # last_pressure = models.CharField(max_length=20)
