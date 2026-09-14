@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -11,7 +9,10 @@ services:
     environment:
       - DEBUG=1
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - lumina-api-network
 
   db:
     image: postgres:15-alpine
@@ -21,6 +22,19 @@ services:
       - POSTGRES_DB=django_db
       - POSTGRES_USER=django_user
       - POSTGRES_PASSWORD=django_password
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django_user -d django_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lumina-api-network
+
+networks:
+  lumina-api-network:
+    driver: bridge
 
 volumes:
   postgres_data:
