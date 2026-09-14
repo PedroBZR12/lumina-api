@@ -1,5 +1,5 @@
-from django.contrib.gis.db import models
-from api.models import Patient
+from django.db import models
+from api.models.patient import Patient
 
 class Allergies(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='allergies')
