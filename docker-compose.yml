@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -10,17 +8,14 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=1
-    depends_on:
-      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - lumina-api-network
 
-  db:
-    image: postgres:15-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_DB=django_db
-      - POSTGRES_USER=django_user
-      - POSTGRES_PASSWORD=django_password
+networks:
+  lumina-api-network:
+    driver: bridge
 
 volumes:
   postgres_data:
