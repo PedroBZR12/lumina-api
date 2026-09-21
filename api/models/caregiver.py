@@ -8,4 +8,5 @@ class CareGiver(models.Model):
     shift_end_time = models.TimeField(null=False, blank=False)
     pause_time = models.TimeField(null=False, blank=False)
     cellphone = models.CharField(max_length=30)
+    password = models.CharField(max_length=100)
 
