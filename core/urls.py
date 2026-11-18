@@ -15,8 +15,51 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from api.viewsets.caregiver_viewset import CareGiverViewSet
+from api.viewsets.patient_viewset import PatientViewSet
+from api.auth_views import (
+    LoginView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+)
+from api.viewsets.supporting_viewsets import (
+    AllergyViewSet,
+    CaregiverPatientViewSet,
+    ClinicalRecordViewSet,
+    DoseAdministrationViewSet,
+    HealthInsurancePlanViewSet,
+    HospitalizationDataViewSet,
+    IllnessPatientViewSet,
+    IllnessViewSet,
+    MedicineViewSet,
+    PatientMedicineViewSet,
+    ResponsibleViewSet,
+    RoutineViewSet,
+)
+
+router = DefaultRouter()
+router.register(r'patients', PatientViewSet, basename='patient')
+router.register(r'caregivers', CareGiverViewSet, basename='caregiver')
+router.register(r'responsibles', ResponsibleViewSet, basename='responsible')
+router.register(r'hospitalizations', HospitalizationDataViewSet, basename='hospitalization')
+router.register(r'allergies', AllergyViewSet, basename='allergy')
+router.register(r'insurance-plans', HealthInsurancePlanViewSet, basename='insurance-plan')
+router.register(r'routines', RoutineViewSet, basename='routine')
+router.register(r'illnesses', IllnessViewSet, basename='illness')
+router.register(r'patient-illnesses', IllnessPatientViewSet, basename='patient-illness')
+router.register(r'medicines', MedicineViewSet, basename='medicine')
+router.register(r'prescriptions', PatientMedicineViewSet, basename='prescription')
+router.register(r'caregiver-patients', CaregiverPatientViewSet, basename='caregiver-patient')
+router.register(r'doses', DoseAdministrationViewSet, basename='dose')
+router.register(r'clinical-records', ClinicalRecordViewSet, basename='clinical-record')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/password-reset/', PasswordResetRequestView.as_view(), name='password-reset'),
+    path('api/auth/password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
+    path('api/', include(router.urls)),
 ]

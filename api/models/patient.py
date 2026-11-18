@@ -1,5 +1,4 @@
 from django.db import models
-from api.models.responsible import Responsible
 from api.models.routine import Routine
 from api.models.health_insurance_plan import HealthInsurancePlan
 
@@ -22,26 +21,26 @@ class Patient(models.Model):
     birth_date = models.DateField()
     main_diagnosis = models.TextField(null=False, blank=False, max_length=300)
     religion = models.CharField(max_length=50)
-    cpf = models.CharField(max_length=15, null=False, blank=False)
+    cpf = models.CharField(max_length=15, null=False, blank=False, unique=True)
     rg = models.CharField(max_length=15, null=False, blank=False)
     genre = models.IntegerField(choices=Genre.choices, null=False, blank=False)
     continuous_use_medicines = models.TextField()
     blood_type = models.IntegerField(choices=BloodType.choices)
-    routine = models.ForeignKey(Routine, on_delete=models.CASCADE, related_name="patient")
-    hip = models.ForeignKey(HealthInsurancePlan, on_delete=models.CASCADE, related_name="patient") # health insurance plan
+    routine = models.ForeignKey(Routine, on_delete=models.PROTECT, related_name="patient")
+    hip = models.ForeignKey(
+        HealthInsurancePlan,
+        on_delete=models.SET_NULL,
+        related_name="patient",
+        null=True,
+        blank=True,
+    )
     temperament = models.CharField(max_length=100)
     hobbies = models.TextField(max_length=500)
     secondary_health_problems = models.TextField(max_length=400)
-    responsible = models.ForeignKey(Responsible, on_delete=models.CASCADE, related_name="patient")
-    # emergency_contact = models.CharField(max_length=50)
-    # nationality = models.CharField(max_length=50)
-    # allergies = models.TextField(blank=True, null=True)
-    # restrictions = models.TextField(blank=True, null=True)
-    # illnesses = models.TextField(blank=True, null=True)
-    # id_register = models.CharField(max_length=9)
-    # medical_history = models.TextField(blank=True, null=True)
-    # vital_signs = models.TextField(blank=True, null=True)
 
-    # caregiver = models.OneToOneField(Caregiver, on_delete=models.CASCADE, related_name="patient")
-    # room_number = models.IntegerField()
-    # last_pressure = models.CharField(max_length=20)
+    @property
+    def active(self):
+        latest_admission = self.hospitalization_data.order_by(
+            '-admission_datetime'
+        ).first()
+        return latest_admission is not None and latest_admission.discharge_date is None

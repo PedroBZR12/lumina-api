@@ -1,15 +1,46 @@
 services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-lumina}
+      MYSQL_USER: ${DB_USER:-lumina}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Configure DB_PASSWORD no arquivo .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-${DB_PASSWORD:?Configure DB_PASSWORD no arquivo .env}}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3307:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - lumina-api-network
+
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    restart: unless-stopped
     volumes:
       - .:/app
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DEBUG=1
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      DEBUG: ${DEBUG:-1}
+      DB_ENGINE: django.db.backends.mysql
+      DB_NAME: ${DB_NAME:-lumina}
+      DB_USER: ${DB_USER:-lumina}
+      DB_PASSWORD: ${DB_PASSWORD:?Configure DB_PASSWORD no arquivo .env}
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - lumina-api-network
 
@@ -18,4 +49,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  mysql_data:

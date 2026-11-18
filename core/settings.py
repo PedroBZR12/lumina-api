@@ -25,7 +25,11 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config("ALLOWED_HOSTS", default="localhost,127.0.0.1,testserver").split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -75,19 +79,26 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+DB_ENGINE = config('DB_ENGINE', default='django.db.backends.mysql')
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.mysql'),
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='host.docker.internal'),
-        'PORT': config('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            },
+        'ENGINE': DB_ENGINE,
+        'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
     }
 }
+
+if DB_ENGINE != 'django.db.backends.sqlite3':
+    DATABASES['default'].update({
+        'USER': config('DB_USER', default=''),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='3306'),
+        'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+    })
+    if DB_ENGINE == 'django.db.backends.mysql':
+        DATABASES['default']['OPTIONS'] = {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        }
 
 
 # Password validation
@@ -134,5 +145,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-    }
+    },
 }
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'api.authentication.CaregiverTokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@lumina.local')
+PASSWORD_RESET_URL = config(
+    'PASSWORD_RESET_URL',
+    default='http://localhost:3000/reset-password',
+)
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)

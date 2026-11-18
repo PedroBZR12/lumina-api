@@ -10,3 +10,5 @@ from api.models.illness_patient import IllnessPatient
 from api.models.medicine import Medicine
 from api.models.patient_medicine import PatientMedicine
 from api.models.routine import Routine
+from api.models.dose_administration import DoseAdministration, DoseStatus
+from api.models.clinical_record import ClinicalRecord
