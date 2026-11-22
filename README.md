@@ -1,54 +1,69 @@
 # Lumina API 🚀
 
-API RESTful desenvolvida com **Django** e **Django REST Framework**, containerizada com **Docker** e **MySQL**.
+API RESTful desenvolvida com **Django** e **Django REST Framework**, usando um banco **MySQL** hospedado no **Aiven**.
 
 ---
 
 ## 🛠️ Pré-requisitos
 
-Antes de começar, certifique-se de ter instalado em sua máquina:
-
 * [Git](https://git-scm.com/)
-* [Docker Engine](https://docs.docker.com/get-docker/) (v20.10 ou superior)
-* [Docker Compose](https://docs.docker.com/compose/install/) (v2.0 ou superior)
+* Python 3.11 ou superior
+* Bibliotecas cliente do MySQL (necessárias para compilar o `mysqlclient`). No macOS: `brew install mysql-client pkgconf`
 
 ---
 
-## 🚀 Instalação e Execução (Passo a Passo)
+## 🚀 Instalação e Execução
 
-Siga estes passos em ordem no seu terminal para colocar o projeto e o banco de dados no ar:
+### Passo 1: Clonar o repositório e acessar a pasta
 
-### Passo 1: Clonar o repositório
-Baixe o código do projeto para a sua máquina:
-git clone [https://github.com/seu-usuario/lumina-api.git](https://github.com/seu-usuario/lumina-api.git)
-
-### Passo 2: Acessar a pasta do projeto
-Entre no diretório do projeto clonado:
+```bash
+git clone https://github.com/seu-usuario/lumina-api.git
 cd lumina-api
+```
 
-### Passo 3: Construir e iniciar os containers
-Crie o arquivo local de configuração:
+### Passo 2: Criar o ambiente virtual e instalar as dependências
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Passo 3: Configurar a conexão com o Aiven
 
 ```bash
 cp .env.example .env
 ```
 
-Edite `.env` e defina `SECRET_KEY`, `DB_NAME`, `DB_USER` e `DB_PASSWORD`. Não publique esse arquivo.
+Preencha o `.env` com os dados do serviço MySQL no console do Aiven (Host, Port, User, Password e Database name) e defina um `SECRET_KEY`. Não publique esse arquivo.
 
-Edite `.env` e preencha `SECRET_KEY`, `DB_PASSWORD` e, se quiser, `DB_NAME` e `DB_USER`. O Compose executa as migrações automaticamente ao iniciar a API.
-
-```bash
-docker compose up -d --build
+```
+DB_ENGINE=django.db.backends.mysql
+DB_HOST=<host>.aivencloud.com
+DB_PORT=<porta>
+DB_NAME=defaultdb
+DB_USER=avnadmin
+DB_PASSWORD=<senha>
+DB_SSL_MODE=VERIFY_IDENTITY
+DB_SSL_CA=certs/aiven-ca.pem
 ```
 
-Confira os containers e os logs:
+O certificado CA do projeto Aiven fica em `certs/aiven-ca.pem` (baixado em "CA certificate" no console). Caminhos relativos em `DB_SSL_CA` são resolvidos a partir da raiz do projeto.
+
+### Passo 4: Aplicar as migrações e iniciar a API
 
 ```bash
-docker compose ps
-docker compose logs -f web
+python manage.py migrate
+python manage.py runserver
 ```
 
-A API fica disponível localmente em `http://localhost:8000/api/`. Para conectar pelo MySQL Workbench, use host `127.0.0.1`, porta `3307`, usuário e senha definidos em `DB_USER` e `DB_PASSWORD`, e o banco `DB_NAME`. O MySQL Workbench é o cliente; o servidor MySQL é o container `db`. Se necessário, defina `DB_ROOT_PASSWORD` separadamente para a senha do usuário root do banco. Para desligar os containers sem apagar os dados, execute `docker compose down`; para removê-los, inclusive os dados persistidos, use `docker compose down -v`.
+A API fica disponível em `http://localhost:8000/api/`. Para inspecionar o banco pelo MySQL Workbench, use os mesmos dados de conexão do Aiven, com SSL obrigatório e o arquivo `certs/aiven-ca.pem` como CA.
+
+Para rodar os testes (o Django cria e remove um banco temporário `test_<DB_NAME>` no Aiven):
+
+```bash
+python manage.py test
+```
 
 ## API
 

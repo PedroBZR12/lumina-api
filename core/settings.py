@@ -99,6 +99,12 @@ if DB_ENGINE != 'django.db.backends.sqlite3':
         DATABASES['default']['OPTIONS'] = {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
+        DB_SSL_MODE = config('DB_SSL_MODE', default='')
+        DB_SSL_CA = config('DB_SSL_CA', default='')
+        if DB_SSL_MODE:
+            DATABASES['default']['OPTIONS']['ssl_mode'] = DB_SSL_MODE
+        if DB_SSL_CA:
+            DATABASES['default']['OPTIONS']['ssl'] = {'ca': str(BASE_DIR / DB_SSL_CA)}
 
 
 # Password validation
