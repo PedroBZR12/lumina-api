@@ -1,7 +1,8 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from api.models import HospitalizationData, Patient, Responsible
+from api.models import Allergies, HospitalizationData, Patient, Responsible
+from api.serializers.allergies_serializer import AllergySerializer
 from api.serializers.responsible_serializer import ResponsibleSerializer
 from api.serializers.validators import normalize_cpf
 
@@ -14,6 +15,7 @@ class AdmissionInputSerializer(serializers.Serializer):
 
 class PatientSerializer(serializers.ModelSerializer):
     responsibles = ResponsibleSerializer(many=True)
+    allergies = AllergySerializer(many=True, required=False)
     admission = AdmissionInputSerializer(write_only=True, required=False)
     active = serializers.BooleanField(read_only=True)
 
@@ -23,7 +25,8 @@ class PatientSerializer(serializers.ModelSerializer):
             'id', 'complete_name', 'birth_date', 'main_diagnosis', 'religion',
             'cpf', 'rg', 'genre', 'continuous_use_medicines', 'blood_type',
             'routine', 'hip', 'temperament', 'hobbies',
-            'secondary_health_problems', 'responsibles', 'admission', 'active',
+            'secondary_health_problems', 'responsibles', 'allergies',
+            'admission', 'active',
         )
 
     def validate_cpf(self, value):
@@ -49,6 +52,7 @@ class PatientSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         responsibles = validated_data.pop('responsibles')
+        allergies = validated_data.pop('allergies', [])
         admission = validated_data.pop('admission', None)
         if admission is None:
             raise serializers.ValidationError(
@@ -59,6 +63,8 @@ class PatientSerializer(serializers.ModelSerializer):
             contact.pop('id', None)
             contact.pop('patient', None)
             Responsible.objects.create(patient=patient, **contact)
+        for allergy in allergies:
+            Allergies.objects.create(patient=patient, **allergy)
         HospitalizationData.objects.create(
             patient=patient,
             caregiver=self.context['request'].user,
@@ -69,6 +75,7 @@ class PatientSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         responsibles = validated_data.pop('responsibles', None)
+        allergies = validated_data.pop('allergies', None)
         if validated_data.pop('admission', None) is not None:
             raise serializers.ValidationError(
                 {'admission': 'Atualize admissões pelo endpoint de internações.'}
@@ -95,4 +102,19 @@ class PatientSerializer(serializers.ModelSerializer):
                         )
                 else:
                     Responsible.objects.create(patient=instance, **contact)
+        if allergies is not None:
+            for allergy in allergies:
+                allergy_id = allergy.pop('id', None)
+                allergy.pop('patient', None)
+                if allergy_id:
+                    updated_count = Allergies.objects.filter(
+                        pk=allergy_id,
+                        patient=instance,
+                    ).update(**allergy)
+                    if not updated_count:
+                        raise serializers.ValidationError(
+                            {'allergies': 'Alergia inválida para este paciente.'}
+                        )
+                else:
+                    Allergies.objects.create(patient=instance, **allergy)
         return instance

@@ -4,7 +4,7 @@ from api.models.illness import Illness
 
 class IllnessPatient(models.Model):
     illness = models.ForeignKey(Illness, on_delete=models.CASCADE)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT)
 
     class Meta:
         constraints = [

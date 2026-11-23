@@ -44,3 +44,8 @@ class Patient(models.Model):
             '-admission_datetime'
         ).first()
         return latest_admission is not None and latest_admission.discharge_date is None
+
+    def delete(self, *args, **kwargs):
+        raise RuntimeError(
+            "Paciente nunca pode ser excluído; registre a data de alta."
+        )

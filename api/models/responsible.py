@@ -2,7 +2,7 @@ from django.db import models
 from api.models.patient import Patient
 
 class Responsible(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="responsibles")
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name="responsibles")
     complete_name = models.CharField(max_length=200, null=False, blank=False)
     cpf = models.CharField(max_length=15)
     rg = models.CharField(max_length=15)

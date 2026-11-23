@@ -7,7 +7,7 @@ class AllergyType(models.TextChoices):
     OTHER = "OUTRA", "Outra"
 
 class Allergies(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='allergies')
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='allergies')
     type = models.CharField(max_length=20, choices=AllergyType.choices)
     name = models.CharField(max_length=200)
     reaction = models.TextField(max_length=400)
