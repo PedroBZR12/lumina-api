@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from urllib.parse import parse_qs, urlparse
 
 from api.models import (
+    Allergies,
     CareGiver,
     HospitalizationData,
     HealthInsurancePlan,
@@ -44,7 +45,7 @@ class ApiTestCase(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token}')
         self.caregiver = CareGiver.objects.get(email='ana@example.com')
 
-    def create_patient(self):
+    def create_patient(self, allergies=None):
         routine = Routine.objects.create(
             sleep_time='22:00:00',
             wakeup_time='06:00:00',
@@ -93,6 +94,8 @@ class ApiTestCase(TestCase):
                 'main_diagnosis': 'Diagnostico de admissao',
             },
         }
+        if allergies is not None:
+            payload['allergies'] = allergies
         response = self.client.post('/api/patients/', payload, format='json')
         self.assertEqual(response.status_code, 201, response.data)
         return Patient.objects.get(pk=response.data['id'])
@@ -258,6 +261,57 @@ class PatientAndClinicalWorkflowTests(ApiTestCase):
         )
         self.assertEqual(mural.status_code, 200)
         self.assertEqual(len(mural.data), 1)
+
+    def test_clinical_record_mural_is_returned_newest_first(self):
+        patient = self.create_patient()
+        older = timezone.now() - timezone.timedelta(hours=2)
+        newer = timezone.now()
+        from api.models import ClinicalRecord
+
+        older_record = ClinicalRecord.objects.create(
+            patient=patient,
+            caregiver=self.caregiver,
+            description="Registro antigo",
+            recorded_at=older,
+        )
+        newer_record = ClinicalRecord.objects.create(
+            patient=patient,
+            caregiver=self.caregiver,
+            description="Registro novo",
+            recorded_at=newer,
+        )
+
+        response = self.client.get('/api/clinical-records/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['id'], newer_record.pk)
+        self.assertEqual(response.data[1]['id'], older_record.pk)
+
+    def test_patient_create_accepts_allergies(self):
+        patient = self.create_patient(allergies=[{
+            'type': 'ALIMENTAR',
+            'name': 'Amendoim',
+            'reaction': 'Anafilaxia',
+            'trigger': 'Ingestao',
+        }])
+        allergy = Allergies.objects.get(patient=patient)
+        self.assertEqual(allergy.name, 'Amendoim')
+
+    def test_caregiver_can_only_retrieve_own_profile(self):
+        other = CareGiver.objects.create(
+            complete_name='Outro Cuidador',
+            cpf='12345678903',
+            email='outro@example.com',
+            shift_start_time='08:00:00',
+            shift_end_time='18:00:00',
+            pause_time='12:00:00',
+            cellphone='11999999996',
+            password='ignored',
+        )
+        response = self.client.get('/api/caregivers/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item['id'] for item in response.data], [self.caregiver.pk])
+        detail = self.client.get(f'/api/caregivers/{other.pk}/')
+        self.assertEqual(detail.status_code, 404)
 
     def test_dose_starts_pending_and_only_mark_endpoint_records_actor(self):
         patient = self.create_patient()

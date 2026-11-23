@@ -1,5 +1,5 @@
 from decouple import config
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
 
 RATE_LIMITED_ROUTES = {
@@ -13,6 +13,11 @@ class CustomMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.method == "OPTIONS":
+            response = HttpResponse(status=204)
+        else:
+            response = None
+
         if request.path in RATE_LIMITED_ROUTES:
             ip = request.META.get("REMOTE_ADDR")
             cache_key = f"rate_limit_{ip}_{request.path}"
@@ -30,7 +35,8 @@ class CustomMiddleware:
                 status=401
             )
 
-        response = self.get_response(request)
+        if response is None:
+            response = self.get_response(request)
 
         # CORS        
         response["Access-Control-Allow-Origin"] = config(

@@ -4,7 +4,7 @@ from api.models.medicine import Medicine
 from api.models.caregiver import CareGiver
 
 class PatientMedicine(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='medicine')
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='medicine')
     medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='patient')
     dosage = models.CharField(max_length=10)
     last_hour = models.TimeField(blank=True, null=True)

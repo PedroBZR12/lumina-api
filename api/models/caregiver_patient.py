@@ -4,7 +4,7 @@ from api.models.patient import Patient
 
 class CaregiverPatient(models.Model):
     caregiver = models.ForeignKey(CareGiver, on_delete=models.CASCADE, related_name='patient')
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='caregiver')
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='caregiver')
 
     class Meta:
         constraints = [

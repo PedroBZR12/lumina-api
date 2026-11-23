@@ -43,11 +43,17 @@ from api.serializers import (
 class CareGiverViewSet(ModelViewSet):
     queryset = CareGiver.objects.all()
     serializer_class = CareGiverSerializer
+    http_method_names = ("get", "post", "put", "patch", "head", "options")
 
     def get_permissions(self):
         if self.action == "create":
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return CareGiver.objects.none()
+        return CareGiver.objects.filter(pk=self.request.user.pk)
 
 
 class AssignedPatientsMixin:
@@ -173,6 +179,8 @@ class PatientMedicineViewSet(AssignedPatientsMixin, ModelViewSet):
     def perform_create(self, serializer):
         patient = serializer.validated_data["patient"]
         self.require_assigned_patient(patient)
+        if not patient.active:
+            raise PermissionDenied("Não é possível criar prescrições para paciente inativo.")
         serializer.save()
 
 
@@ -210,17 +218,22 @@ class DoseAdministrationViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         prescription = serializer.validated_data["prescription"]
+        patient = prescription.patient
         if not CaregiverPatient.objects.filter(
             patient=prescription.patient,
             caregiver=self.request.user,
         ).exists():
             raise PermissionDenied("O paciente não está vinculado a este cuidador.")
+        if not patient.active:
+            raise PermissionDenied("Não é possível administrar medicamentos de paciente inativo.")
         serializer.save(status=DoseStatus.PENDING)
 
     @action(detail=True, methods=("post",))
     @transaction.atomic
     def mark(self, request, pk=None):
         dose = self.get_object()
+        if not dose.prescription.patient.active:
+            raise PermissionDenied("Não é possível alterar doses de paciente inativo.")
         new_status = request.data.get("status")
         if new_status not in (DoseStatus.ADMINISTERED, DoseStatus.REFUSED):
             raise ValidationError(
@@ -270,7 +283,7 @@ class ClinicalRecordViewSet(ModelViewSet):
             queryset = queryset.filter(recorded_at__date__gte=parsed_from)
         if parsed_to:
             queryset = queryset.filter(recorded_at__date__lte=parsed_to)
-        return queryset.order_by("recorded_at")
+        return queryset.order_by("-recorded_at")
 
     def perform_create(self, serializer):
         patient = serializer.validated_data["patient"]
@@ -279,4 +292,6 @@ class ClinicalRecordViewSet(ModelViewSet):
             caregiver=self.request.user,
         ).exists():
             raise PermissionDenied("O paciente não está vinculado a este cuidador.")
+        if not patient.active:
+            raise PermissionDenied("Não é possível criar registros para paciente inativo.")
         serializer.save(caregiver=self.request.user)

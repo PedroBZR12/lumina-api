@@ -10,7 +10,7 @@ class HospitalizationData(models.Model):
     caregiver = models.ForeignKey(CareGiver, on_delete=models.PROTECT)
     patient = models.ForeignKey(
         Patient,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="hospitalization_data",
     )
     main_diagnosis = models.TextField(max_length=600)
